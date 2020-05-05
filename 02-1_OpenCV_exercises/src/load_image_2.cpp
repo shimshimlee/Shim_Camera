@@ -16,7 +16,7 @@ void loadImage2()
         ostringstream imgNumber;                   // #include <sstream>
         imgNumber << setfill('0') << setw(4) << i; // #include <iomanip>
         string filename = "../images/img" + imgNumber.str() + ".png";
-
+        cout<<imgNumber.str();
         // load and display image
         cv::Mat img;
         img = cv::imread(filename);
