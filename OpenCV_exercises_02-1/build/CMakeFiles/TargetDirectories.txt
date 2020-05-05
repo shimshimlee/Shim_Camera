@@ -1,0 +1,7 @@
+/home/sim/SFND_Camera/OpenCV_exercises_02-1/build/CMakeFiles/change_pixels.dir
+/home/sim/SFND_Camera/OpenCV_exercises_02-1/build/CMakeFiles/rebuild_cache.dir
+/home/sim/SFND_Camera/OpenCV_exercises_02-1/build/CMakeFiles/load_image_1.dir
+/home/sim/SFND_Camera/OpenCV_exercises_02-1/build/CMakeFiles/load_image_2.dir
+/home/sim/SFND_Camera/OpenCV_exercises_02-1/build/CMakeFiles/load_image_3.dir
+/home/sim/SFND_Camera/OpenCV_exercises_02-1/build/CMakeFiles/create_matrix.dir
+/home/sim/SFND_Camera/OpenCV_exercises_02-1/build/CMakeFiles/edit_cache.dir
