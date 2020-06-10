@@ -1,0 +1,5 @@
+/home/sim/SFND_Camera/04-1_gradient_filtering/build/CMakeFiles/rebuild_cache.dir
+/home/sim/SFND_Camera/04-1_gradient_filtering/build/CMakeFiles/edit_cache.dir
+/home/sim/SFND_Camera/04-1_gradient_filtering/build/CMakeFiles/magnitude_sobel.dir
+/home/sim/SFND_Camera/04-1_gradient_filtering/build/CMakeFiles/gaussian_smoothing.dir
+/home/sim/SFND_Camera/04-1_gradient_filtering/build/CMakeFiles/gradient_sobel.dir

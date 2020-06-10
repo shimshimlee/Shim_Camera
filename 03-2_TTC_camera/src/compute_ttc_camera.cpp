@@ -36,7 +36,6 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 
             if (distPrev > std::numeric_limits<double>::epsilon() && distCurr >= minDist)
             { // avoid division by zero
-
                 double distRatio = distCurr / distPrev;
                 distRatios.push_back(distRatio);
             }
@@ -71,7 +70,7 @@ int main()
     vector<cv::KeyPoint> kptsSource, kptsRef;
     readKeypoints("../dat/C23A5_KptsSource_AKAZE.dat", kptsSource); // readKeypoints("./dat/C23A5_KptsSource_SHI-BRISK.dat"
     readKeypoints("../dat/C23A5_KptsRef_AKAZE.dat", kptsRef); // readKeypoints("./dat/C23A5_KptsRef_SHI-BRISK.dat"
-
+    
     vector<cv::DMatch> matches;
     readKptMatches("../dat/C23A5_KptMatches_AKAZE.dat", matches); // readKptMatches("./dat/C23A5_KptMatches_SHI-BRISK.dat", matches);
     double ttc; 
