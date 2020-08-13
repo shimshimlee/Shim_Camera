@@ -30,7 +30,7 @@ void descKeypoints1()
     t = (double)cv::getTickCount();
     descriptor->compute(imgGray, kptsBRISK, descBRISK);
     t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-    cout << "BRISK descriptor in " << 1000 * t / 1.0 << " ms" << endl;
+    cout << "BRISK descriptor in ￼￼￼" << 1000 * t / 1.0 << " ms" << endl;
 
     // visualize results
     cv::Mat visImage = img.clone();
@@ -66,8 +66,10 @@ void descKeypoints1()
     cv::namedWindow(windowName, 2);
     imshow(windowName, visImage);
     cv::waitKey(0);
-
     // EOF STUDENT CODE
+    cout << "SIFT corner vector size" << endl << kptsSIFT.size() << endl;
+    cout << "SIFT descriptor size" << endl << descSIFT.size() << endl;
+
 
 }
 
