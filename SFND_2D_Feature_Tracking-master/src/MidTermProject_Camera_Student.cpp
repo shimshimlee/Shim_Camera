@@ -6,6 +6,7 @@
 #include <vector>
 #include <cmath>
 #include <limits>
+#include <numeric>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -78,8 +79,8 @@ int main(int argc, const char *argv[])
 
         // extract 2D keypoints from current image
         vector<cv::KeyPoint> keypoints; // create empty feature list for current image
-        string detectorType = "SHITOMASI";
-        // string detectorType = "HARRIS";
+        // string detectorType = "SHITOMASI";
+        string detectorType = "HARRIS";
         // string detectorType = "FAST";
         // string detectorType = "BRISK";
         // string detectorType = "ORB";
@@ -104,7 +105,7 @@ int main(int argc, const char *argv[])
             detKeypointsHarris(keypoints, imgGray, false);
         }
         else if (detectorType.compare("FAST") == 0 || detectorType.compare("BRISK") == 0 ||
-                 detectorType.compare("AKAZE") == 0 || detectorType.compare("ORB") ==0 ||
+                 detectorType.compare("AKAZE") == 0 || detectorType.compare("ORB") == 0 ||
                  detectorType.compare("SIFT") == 0)
         {
             detKeypointsModern(keypoints, imgGray, detectorType, false);
@@ -179,8 +180,20 @@ int main(int argc, const char *argv[])
         //// -> BRIEF, ORB, FREAK, AKAZE, SIFT
 
         cv::Mat descriptors;
-        string descriptorType = "BRISK"; // BRIEF, ORB, FREAK, AKAZE, SIFT
+        // string descriptorType = "BRISK"; // BRIEF, ORB, FREAK, AKAZE, SIFT
+        string descriptorType = "BRIEF";
+        // string descriptorType = "ORB";
+        // string descriptorType = "FREAK";
+        // string descriptorType = "AKAZE";
+        // string descriptorType = "SIFT";
+
+        double t_des = (double) cv::getTickCount();
         descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
+        t_des = ((double) cv::getTickCount() - t_des) / cv::getTickFrequency();
+        t_des = 1000 * t_des / 1.0;
+        cout << descriptorType << " descriptor extraction in " << t_des << " ms" << endl;
+
+        des_record_time.push_back(t_des);
         //// EOF STUDENT ASSIGNMENT
 
         // push descriptors for current frame to end of data buffer
@@ -195,16 +208,33 @@ int main(int argc, const char *argv[])
 
             vector<cv::DMatch> matches;
             string matcherType = "MAT_BF";        // MAT_BF, MAT_FLANN
-            string descriptorType = "DES_BINARY"; // DES_BINARY, DES_HOG
-            string selectorType = "SEL_NN";       // SEL_NN, SEL_KNN
+            // string matcherType = "MAT_FLANN";
+        
+            // BINARY descriptors :BRISK, BRIEF, ORB, FREAK, and AKAZE
+            // HOG descriptors : SIFT (and SURF and GLOH, all patented)
+            string descriptorclass{}; // DES_BINARY, DES_HOG
+            if (descriptorType.compare("SIFT")==0) {
+                descriptorclass = "DES_HOG";
+            } else {
+                descriptorclass = "DES_BINARY";
+            }
+
+            // string selectorType = "SEL_NN";       // SEL_NN, SEL_KNN
+            string selectorType = "SEL_KNN";
 
             //// STUDENT ASSIGNMENT
             //// TASK MP.5 -> add FLANN matching in file matching2D.cpp
             //// TASK MP.6 -> add KNN match selection and perform descriptor distance ratio filtering with t=0.8 in file matching2D.cpp
-
+            
+            double t_mat = (double) cv::getTickCount();
             matchDescriptors((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints,
                              (dataBuffer.end() - 2)->descriptors, (dataBuffer.end() - 1)->descriptors,
-                             matches, descriptorType, matcherType, selectorType);
+                             matches, descriptorclass, matcherType, selectorType);
+            t_mat = ((double) cv::getTickCount()- t_mat) / cv::getTickFrequency();
+            t_mat = 1000 * t_mat / 1.0 ;
+            cout << matcherType << " descriptor matching in " << t_mat << " ms" << endl;
+            mat_record_num.push_back(matches.size());
+            mat_record_time.push_back(t_mat);
 
             //// EOF STUDENT ASSIGNMENT
 
@@ -234,6 +264,19 @@ int main(int argc, const char *argv[])
         }
 
     } // eof loop over all images
+    double ave_det_time=double(accumulate(det_record_time.begin(), det_record_time.end(), 0.) / 10.0);
+    double ave_det_num=double(accumulate(det_record_num.begin(), det_record_num.end(), 0.) / 10.0);
+    double ave_des_time=double(accumulate(des_record_time.begin(), des_record_time.end(), 0.) / 10.0);
+    double ave_mat_time=double(accumulate(mat_record_time.begin(), mat_record_time.end(), 0.) / 9.0);
+    double ave_mat_num=double(accumulate(mat_record_num.begin(), mat_record_num.end(), 0.) / 9.0);
+    double ave_total_time=ave_des_time+ave_det_time+ave_mat_time;
+
+    cout << "Average detection time: " <<ave_det_time<< endl;
+    cout << "Average detection num: " <<ave_det_num<< endl;
+    cout << "Average description time: "<< ave_des_time << endl;
+    cout << "Average matching time: " << ave_mat_time<< endl;
+    cout << "Average matching num: " << ave_mat_num<< endl;
+    cout << "Average total time: " << ave_total_time<< endl;
 
     return 0;
 }

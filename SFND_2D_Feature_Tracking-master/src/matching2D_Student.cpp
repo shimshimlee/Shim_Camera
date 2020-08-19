@@ -5,32 +5,62 @@ using namespace std;
 
 // Find best matches for keypoints in two camera images based on several matching methods
 void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::KeyPoint> &kPtsRef, cv::Mat &descSource, cv::Mat &descRef,
-                      std::vector<cv::DMatch> &matches, std::string descriptorType, std::string matcherType, std::string selectorType)
+                      std::vector<cv::DMatch> &matches, std::string descriptorclass, std::string matcherType, std::string selectorType)
 {
     // configure matcher
     bool crossCheck = false;
     cv::Ptr<cv::DescriptorMatcher> matcher;
+    int normType;
 
     if (matcherType.compare("MAT_BF") == 0)
     {
-        int normType = cv::NORM_HAMMING;
+        int normType = descriptorclass.compare("DES_BINARY") == 0 ? cv::NORM_HAMMING : cv::NORM_L2 ;
         matcher = cv::BFMatcher::create(normType, crossCheck);
     }
     else if (matcherType.compare("MAT_FLANN") == 0)
     {
-        // ...
+        // OpenCV bug workaround : convert binary descriptors to floating point due to a bug in current OpenCV implementation
+        if (descSource.type() !=CV_32F) {
+            descSource.convertTo(descSource, CV_32F);
+            // descRef.convertTo(descRef, CV_32F);
+        }
+        if (descRef.type() !=CV_32F) {
+            descRef.convertTo(descRef, CV_32F);
+        }
+        matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
     }
+    else
+    {
+        throw invalid_argument(matcherType + " is not supported, only MAT_FLANN and MAT_BF is valid matchertype ");
+    }
+    
 
     // perform matching task
     if (selectorType.compare("SEL_NN") == 0)
     { // nearest neighbor (best match)
 
         matcher->match(descSource, descRef, matches); // Finds the best match for each descriptor in desc1
+        cout <<  "Descriptorclass : " << descriptorclass << " (NN) with n = " << matches.size() << endl;
     }
     else if (selectorType.compare("SEL_KNN") == 0)
     { // k nearest neighbors (k=2)
-
-        // ...
+        vector<vector<cv::DMatch>> knn_matches;
+        matcher->knnMatch(descSource, descRef, knn_matches, 2);
+        //-- Filter matches using the Lowe's ratio test
+        double minDescDistRatio = 0.8;
+        for (auto it = knn_matches.begin(); it != knn_matches.end(); ++it) {
+            if ((*it)[0].distance < minDescDistRatio * (*it)[1].distance) {
+                matches.push_back((*it)[0]);
+            }
+        }
+        cout << "Descriptorclass: " << descriptorclass << " (KNN) with n=" << knn_matches.size()
+             << "# keypoints removed = "
+             << knn_matches.size() - matches.size() << endl;
+    }
+    else
+    {
+        throw invalid_argument(
+                selectorType + " is not supported, only SEL_NN and SEL_KNN  is valid selectorType for matcher ");
     }
 }
 
@@ -41,24 +71,63 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descr
     cv::Ptr<cv::DescriptorExtractor> extractor;
     if (descriptorType.compare("BRISK") == 0)
     {
-
         int threshold = 30;        // FAST/AGAST detection threshold score.
         int octaves = 3;           // detection octaves (use 0 to do single scale)
         float patternScale = 1.0f; // apply this scale to the pattern used for sampling the neighbourhood of a keypoint.
 
         extractor = cv::BRISK::create(threshold, octaves, patternScale);
-    }
-    else
-    {
+    } else if (descriptorType.compare("BRIEF")== 0) {
+        int bytes = 32; // Legth of the descriptor in bytes, valid values are: 16, 32 (default) or 64 .
+        bool use_orientation = false;// Sample patterns using keypoints orientation, disabled by default.
+        extractor = cv::xfeatures2d::BriefDescriptorExtractor::create(bytes, use_orientation);
+     
+    } else if (descriptorType.compare("AKAZE") == 0) {
+        auto descriptor_type = cv::AKAZE::DESCRIPTOR_MLDB;// Type of the extracted descriptor: DESCRIPTOR_KAZE, DESCRIPTOR_KAZE_UPRIGHT, DESCRIPTOR_MLDB or DESCRIPTOR_MLDB_UPRIGHT.
+        int descriptor_size = 0;// Size of the descriptor in bits. 0 -> Full size
+        int descriptor_channels = 3;// Number of channels in the descriptor (1, 2, 3)
+        float threshold = 0.001f;// Detector response threshold to accept point
+        int nOctaves = 4;// Maximum octave evolution of the image
+        int nOctaveLayers = 4;// Default number of sublevels per scale level
+        auto diffusivity = cv::KAZE::DIFF_PM_G2;// Diffusivity type. DIFF_PM_G1, DIFF_PM_G2, DIFF_WEICKERT or DIFF_CHARBONNIER
 
-        //...
+        extractor = cv::AKAZE::create(descriptor_type, descriptor_size, descriptor_channels, threshold, nOctaves, nOctaveLayers, diffusivity);
+
+    } else if (descriptorType.compare("ORB") == 0) {
+        int nfeatures = 500;// The maximum number of features to retain.
+        float scaleFactor = 1.2f;// Pyramid decimation ratio, greater than 1.
+        int nlevels = 8;// The number of pyramid levels.
+        int edgeThreshold = 31;// This is size of the border where the features are not detected.
+        int firstLevel = 0;// The level of pyramid to put source image to.
+        int WTA_K = 2;// The number of points that produce each element of the oriented BRIEF descriptor.
+        auto scoreType = cv::ORB::HARRIS_SCORE;// The default HARRIS_SCORE means that Harris algorithm is used to rank features.
+        int patchSize = 31;// Size of the patch used by the oriented BRIEF descriptor.
+        int fastThreshold = 20;// The fast threshold.
+        extractor = cv::ORB::create(nfeatures, scaleFactor, nlevels, edgeThreshold, firstLevel, WTA_K, scoreType, patchSize, fastThreshold);
+    } else if (descriptorType.compare("FREAK") == 0) {
+        bool orientationNormalized = true;// Enable orientation normalization.
+        bool scaleNormalized = true;// Enable scale normalization.
+        float patternScale = 22.0f;// Scaling of the description pattern.
+        int nOctaves = 4;// Number of octaves covered by the detected keypoints.
+        const std::vector<int> &selectedPairs = std::vector<int>(); // (Optional) user defined selected pairs indexes,
+        extractor = cv::xfeatures2d::FREAK::create(orientationNormalized, scaleNormalized, patternScale, nOctaves, selectedPairs);
+    } else if (descriptorType.compare("SIFT") == 0) {
+        int nfeatures = 0;// The number of best features to retain.
+        int nOctaveLayers = 3;// The number of layers in each octave. 3 is the value used in D. Lowe paper.
+        double contrastThreshold = 0.04;// The contrast threshold used to filter out weak features in semi-uniform (low-contrast) regions.
+        double edgeThreshold = 10;// The threshold used to filter out edge-like features.
+        double sigma = 1.6;// The sigma of the Gaussian applied to the input image at the octave \#0.
+        extractor = cv::xfeatures2d::SIFT::create(nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma);
+    } else {
+        throw invalid_argument(descriptorType + 
+        " is not supported, Only BRIEF, ORB, FREAK, AKAZE and SIFT is allowed as input dor descriptor");        
+
     }
 
     // perform feature description
-    double t = (double)cv::getTickCount();
+    // double t = (double)cv::getTickCount();
     extractor->compute(img, keypoints, descriptors);
-    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-    cout << descriptorType << " descriptor extraction in " << 1000 * t / 1.0 << " ms" << endl;
+    // t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+    // cout << descriptorType << " descriptor extraction in " << 1000 * t / 1.0 << " ms" << endl;
 }
 
 // Detect keypoints in image using the traditional Shi-Thomasi detector
@@ -118,10 +187,10 @@ void detKeypointsHarris(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis
     cv::convertScaleAbs(dst_norm, dst_norm_scaled);
 
     // visualize results
-    string windowName = "Harris Corner Detector Response Matrix";
-    cv::namedWindow(windowName, 4);
-    cv::imshow(windowName, dst_norm_scaled);
-    cv::waitKey(0);
+    // string windowName = "Harris Corner Detector Response Matrix";
+    // cv::namedWindow(windowName, 4);
+    // cv::imshow(windowName, dst_norm_scaled);
+    // cv::waitKey(0);
     
     // Look for prominent corners and instantiate keypoints
     double maxOverlap = 0.0; // max. permissible overlap between two features in %, used during non-maxima suppression
