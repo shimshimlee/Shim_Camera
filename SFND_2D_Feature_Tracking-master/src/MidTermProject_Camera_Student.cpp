@@ -44,6 +44,7 @@ int main(int argc, const char *argv[])
     // record for evaluation
     vector<int> det_record_num(10);
     vector<double> det_record_time(10);
+    vector<float> det_kpt_dia(10);
     vector<double> des_record_time(10);
     vector<int> mat_record_num(10);
     vector<double> mat_record_time(10);
@@ -80,12 +81,12 @@ int main(int argc, const char *argv[])
         // extract 2D keypoints from current image
         vector<cv::KeyPoint> keypoints; // create empty feature list for current image
         // string detectorType = "SHITOMASI";
-        string detectorType = "HARRIS";
+        // string detectorType = "HARRIS";
         // string detectorType = "FAST";
         // string detectorType = "BRISK";
         // string detectorType = "ORB";
         // string detectorType = "AKAZE";
-        // string detectorType = "SIFT";
+        string detectorType = "SIFT"; 
 
         
 
@@ -127,6 +128,8 @@ int main(int argc, const char *argv[])
         bool bFocusOnVehicle = true;
         cv::Rect vehicleRect(535, 180, 180, 150);
         vector<cv::KeyPoint> insidePoints;
+        vector<float> kpts_dia;
+        float avg_dia;
 
         if (bFocusOnVehicle)
         {
@@ -134,13 +137,17 @@ int main(int argc, const char *argv[])
                 bool isinside = vehicleRect.contains(keypt.pt);
                 if (isinside) {
                     insidePoints.push_back(keypt);
+                    kpts_dia.push_back(keypt.size);
                 }
             }
         keypoints = insidePoints;
+        avg_dia = accumulate(kpts_dia.begin(), kpts_dia.end(), 0.0/kpts_dia.size()); 
         }
         cout<< "The number of keypoints on the preceding vehicle : " << keypoints.size() << endl;
+        cout<< "The average diameter of keypoint neighborhood : " << avg_dia << endl;
         det_record_num.push_back(keypoints.size());
         det_record_time.push_back(t_det);
+        det_kpt_dia.push_back(avg_dia);
 
         // draw figure of the keypoints on the preceding vehicle (for just checking)
         if (false) {
@@ -155,7 +162,7 @@ int main(int argc, const char *argv[])
 
         //// EOF STUDENT ASSIGNMENT
 
-        // optional : limit number of keypoints (helpful for debugging and learning)
+        // optional : limit number of k1eypoints (helpful for debugging and learning)
         bool bLimitKpts = false;
         if (bLimitKpts)
         {
@@ -181,11 +188,11 @@ int main(int argc, const char *argv[])
 
         cv::Mat descriptors;
         // string descriptorType = "BRISK"; // BRIEF, ORB, FREAK, AKAZE, SIFT
-        string descriptorType = "BRIEF";
+        // string descriptorType = "BRIEF";
         // string descriptorType = "ORB";
         // string descriptorType = "FREAK";
         // string descriptorType = "AKAZE";
-        // string descriptorType = "SIFT";
+        string descriptorType = "SIFT";
 
         double t_des = (double) cv::getTickCount();
         descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
@@ -264,18 +271,24 @@ int main(int argc, const char *argv[])
         }
 
     } // eof loop over all images
+    
+    // Performance Evaluation
+    // Count the number of
+    
     double ave_det_time=double(accumulate(det_record_time.begin(), det_record_time.end(), 0.) / 10.0);
     double ave_det_num=double(accumulate(det_record_num.begin(), det_record_num.end(), 0.) / 10.0);
+    float ave_kpt_dia=float(accumulate(det_kpt_dia.begin(), det_kpt_dia.end(), 0.0)/10);
     double ave_des_time=double(accumulate(des_record_time.begin(), des_record_time.end(), 0.) / 10.0);
     double ave_mat_time=double(accumulate(mat_record_time.begin(), mat_record_time.end(), 0.) / 9.0);
     double ave_mat_num=double(accumulate(mat_record_num.begin(), mat_record_num.end(), 0.) / 9.0);
     double ave_total_time=ave_des_time+ave_det_time+ave_mat_time;
 
-    cout << "Average detection time: " <<ave_det_time<< endl;
-    cout << "Average detection num: " <<ave_det_num<< endl;
-    cout << "Average description time: "<< ave_des_time << endl;
-    cout << "Average matching time: " << ave_mat_time<< endl;
+    // cout << "Average detection num: " <<ave_det_num<< endl;
+    // cout << "Average neighborhood size: " <<ave_kpt_dia<< endl;
     cout << "Average matching num: " << ave_mat_num<< endl;
+    // cout << "Average detection time: " <<ave_det_time<< endl;
+    cout << "Average description time: "<< ave_des_time << endl;
+    // cout << "Average matching time: " << ave_mat_time<< endl;
     cout << "Average total time: " << ave_total_time<< endl;
 
     return 0;
