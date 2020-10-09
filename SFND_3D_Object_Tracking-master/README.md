@@ -79,6 +79,7 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
 ## FP.2 : Compute Lidar-based TTC
 In this part of the final project, your task is to compute the time-to-collision for all matched 3D objects based on Lidar measurements alone. 
 -> I used the mean value of x-distacne to reduce the impact of outliers
+![](images/Lidar_TTC.png)
 ```
 void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
                  std::vector<LidarPoint> &lidarPointsCurr, double frameRate, double &TTC)
@@ -229,7 +230,13 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 ## FP.5 : Performance Evaluation 1
 Look for several examples where you have the impression that the Lidar-based TTC estimate is way off. Once you have found those, describe your observations and provide a sound argumentation why you think this happened.
 -> I dind't find any frame which Lidar-TTC is way off. Using mean value makes reducing the impact of outlier. 
-
+![](images/FP5_1.png)
+![](images/FP5_2.png)
+![](images/FP5_3.png)
+![](images/FP5_4.png)
+![](images/FP5_5.png)
+![](images/FP5_6.png)
 
 ## FP.6 : Performance Evaluation 2
 This last exercise is about running the different detector / descriptor combinations and looking at the differences in TTC estimation. Find out which methods perform best and also include several examples where camera-based TTC estimation is way off
+![](images/FP_6.png)
